@@ -53,6 +53,23 @@ import java.util.concurrent.TimeUnit;
 import com.beraldo.hpe.utils.XMLReader;
 import com.beraldo.hpe.view.AutoFitTextureView;
 import hugo.weaving.DebugLog;
+/**
+    在CameraAcitivity里替换掉activity_camera.xml里的layout
+    getFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.container, CameraConnectionFragment.newInstance())
+                    .commit();
+    
+    <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/container"
+
+    在xml中有自定义的TextView
+        <com.beraldo.hpe.view.AutoFitTextureView
+        android:id="@+id/texture"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+ */
 public class CameraConnectionFragment extends Fragment {
     /**
      * The camera preview size will be chosen to be the smallest frame by pixel size capable of

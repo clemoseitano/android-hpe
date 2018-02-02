@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/Selfear2.iml" filepath="$PROJECT_DIR$/Selfear2.iml" />
+      <module fileurl="file://$PROJECT_DIR$/android-hpe.iml" filepath="$PROJECT_DIR$/android-hpe.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
       <module fileurl="file://$PROJECT_DIR$/dlib/dlib.iml" filepath="$PROJECT_DIR$/dlib/dlib.iml" />
     </modules>

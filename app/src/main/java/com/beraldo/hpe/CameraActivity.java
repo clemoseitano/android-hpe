@@ -13,6 +13,9 @@ public class CameraActivity extends Activity {
 
     private static int OVERLAY_PERMISSION_REQ_CODE = 1;
 
+    /**
+     * 使用Fragment
+     */
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

@@ -49,6 +49,11 @@ public class MainActivity extends AppCompatActivity {
      * Checks if the app has permission to write to device storage or open camera
      * If the app does not has permission then the user will be prompted to grant permissions
      *
+     * 在onCreate中，检查档期qpi的版本号。
+     * if (currentapiVersion >= Build.VERSION_CODES.M) {
+            verifyPermissions(this);
+        }
+
      * @param activity
      */
     @DebugLog
@@ -119,6 +124,9 @@ public class MainActivity extends AppCompatActivity {
         startActivity(new Intent(this, CameraActivity.class));
     }
 
+    /**
+     * 设置action bar，屏幕常亮，检查读写权限，写数据文件
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

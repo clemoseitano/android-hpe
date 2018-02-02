@@ -39,6 +39,9 @@ import com.beraldo.hpe.view.FloatingCameraWindow;
 
 /**
  * Class that takes in preview frames and converts the image to Bitmaps to process with dlib lib.
+ * 在Fragment中，previewReader.setOnImageAvailableListener(mOnGetPreviewListener, backgroundHandler);
+ * 调用方将自身传给initialize。可以获得调用方的view。
+ * 在onImageAvailable方法中将image交给dlib处理，把返回的结果显示出来。
  */
 public class OnGetImageListener implements OnImageAvailableListener {
     private static final int NUM_CLASSES = 1001;
