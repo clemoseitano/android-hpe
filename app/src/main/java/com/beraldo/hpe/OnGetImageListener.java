@@ -11,18 +11,22 @@ import android.media.Image;
 import android.media.Image.Plane;
 import android.media.ImageReader;
 import android.media.ImageReader.OnImageAvailableListener;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Trace;
 import android.util.Log;
 import android.view.Display;
 import android.view.WindowManager;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import junit.framework.Assert;
 
 import org.w3c.dom.Document;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
@@ -74,7 +78,7 @@ public class OnGetImageListener implements OnImageAvailableListener {
     private double overallTime = 0;
     private int valid_cycles = 0;
 
-    public void initialize( final Context context, final float[] intrinsics, final float[] distortions, final TextView mPerformanceView, final TextView mResultsView, final Handler handler) {
+    public void initialize(final Context context, final float[] intrinsics, final float[] distortions, final TextView mPerformanceView, final TextView mResultsView, final Handler handler) {
         this.mContext = context;
         this.mPerformanceView = mPerformanceView;
         this.mResultsView = mResultsView;
@@ -96,12 +100,12 @@ public class OnGetImageListener implements OnImageAvailableListener {
         df = new DecimalFormat("##.##");
         df.setRoundingMode(RoundingMode.DOWN);
 
-        if(MainActivity.saveFile) detectionDocument = XMLWriter.newDocument(MainActivity.mode);
+        if (MainActivity.saveFile) detectionDocument = XMLWriter.newDocument(MainActivity.mode);
     }
 
     public void deInitialize() {
         synchronized (OnGetImageListener.this) {
-            if(MainActivity.saveFile) {// Update performance info and save the file
+            if (MainActivity.saveFile) {// Update performance info and save the file
                 XMLWriter.addTimePerformance(detectionDocument, overallTime / valid_cycles); // Add performance field
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
                 XMLWriter.saveDocumentToFile(mContext, detectionDocument, "detection_" + sdf.format(new Date(System.currentTimeMillis())) + ".xml");
@@ -165,6 +169,15 @@ public class OnGetImageListener implements OnImageAvailableListener {
         canvas.drawBitmap(src, matrix, null);
     }
 
+    public File getPublicStorageDir(String fileName) {
+        // Get the directory for the user's public pictures directory.
+        File file = new File(Environment.getExternalStorageDirectory(), fileName);
+        if (!file.exists() && !file.mkdirs()) {
+            Log.e(mContext.getClass().getSimpleName(), "Could not create directory " + file.getAbsolutePath());
+        }
+        return file;
+    }
+
     @Override
     public void onImageAvailable(final ImageReader reader) {
         Image image = null;
@@ -210,7 +223,7 @@ public class OnGetImageListener implements OnImageAvailableListener {
             final int yRowStride = planes[0].getRowStride();
             final int uvRowStride = planes[1].getRowStride();
             final int uvPixelStride = planes[1].getPixelStride();
-            ImageUtils.convertYUV420ToARGB8888( mYUVBytes[0], mYUVBytes[1], mYUVBytes[2], mRGBBytes, mPreviewWdith, mPreviewHeight, yRowStride, uvRowStride, uvPixelStride, false);
+            ImageUtils.convertYUV420ToARGB8888(mYUVBytes[0], mYUVBytes[1], mYUVBytes[2], mRGBBytes, mPreviewWdith, mPreviewHeight, yRowStride, uvRowStride, uvPixelStride, false);
 
             image.close();
         } catch (final Exception e) {
@@ -245,12 +258,21 @@ public class OnGetImageListener implements OnImageAvailableListener {
                         });
 
                         // Update the score textview with info on result
-                        if(!results.isEmpty()) {
+                        if (!results.isEmpty()) {
                             // Update performance timing
                             overallTime += ((endTime - startTime) / 1000f);
                             valid_cycles++;
 
                             final HeadPoseGaze r = results.get(0);
+                            if (Math.abs(r.getPitch()) <= 10 && Math.abs(r.getRoll()) <= 10 && Math.abs(r.getYaw()) <= 10) {
+                                try (FileOutputStream out = new FileOutputStream(new File(getPublicStorageDir("Samples/" ), Long.toHexString(System.currentTimeMillis()).toUpperCase() + ".png"))) {
+                                    mRGBframeBitmap.compress(Bitmap.CompressFormat.PNG, 100, out); // bmp is your Bitmap instance
+                                    Toast.makeText(mContext, "Saved an Image", Toast.LENGTH_LONG).show();
+                                    // PNG is a lossless format, the compression factor (100) is ignored
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+                            }
                             ((Activity) mContext).runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
@@ -259,7 +281,8 @@ public class OnGetImageListener implements OnImageAvailableListener {
                                             "\nRoll: " + df.format(r.getRoll()));
                                 }
                             });
-                            if(MainActivity.saveFile) XMLWriter.addResult(detectionDocument, System.currentTimeMillis(), r.getYaw(), r.getPitch(), r.getRoll());
+                            if (MainActivity.saveFile)
+                                XMLWriter.addResult(detectionDocument, System.currentTimeMillis(), r.getYaw(), r.getPitch(), r.getRoll());
                         }
 
                         mWindow.setRGBBitmap(mRGBrotatedBitmap);

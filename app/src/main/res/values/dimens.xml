@@ -6,4 +6,5 @@
     <dimen name="text_medium">15sp</dimen>
     <dimen name="text_large">20sp</dimen>
     <dimen name="text_huge">25sp</dimen>
+    <dimen name="activity_horizontal_margin">16dp</dimen>
 </resources>
