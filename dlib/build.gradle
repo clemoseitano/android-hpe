@@ -35,6 +35,7 @@ android {
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     compile "com.android.support:appcompat-v7:${rootProject.ext.androidSupportSdkVersion}"
+    implementation 'com.tzutalin.dlib-android-app:dlib:1.0.4'
 }
 
 buildscript {
