@@ -51,6 +51,7 @@ public class OnGetImageListener implements OnImageAvailableListener {
     private static final int NUM_CLASSES = 1001;
     private static final int INPUT_SIZE = 240;
     private static final int IMAGE_MEAN = 117;
+    private static final int THRESHOLD = 5;
     private static final String TAG = "OnGetImageListener";
 
     private int mScreenRotation = 0;
@@ -77,6 +78,8 @@ public class OnGetImageListener implements OnImageAvailableListener {
 
     private double overallTime = 0;
     private int valid_cycles = 0;
+    private Pose bestPose;
+    private int imageCount = 0;
 
     public void initialize(final Context context, final float[] intrinsics, final float[] distortions, final TextView mPerformanceView, final TextView mResultsView, final Handler handler) {
         this.mContext = context;
@@ -264,13 +267,19 @@ public class OnGetImageListener implements OnImageAvailableListener {
                             valid_cycles++;
 
                             final HeadPoseGaze r = results.get(0);
-                            if (Math.abs(r.getPitch()) <= 10 && Math.abs(r.getRoll()) <= 10 && Math.abs(r.getYaw()) <= 10) {
-                                try (FileOutputStream out = new FileOutputStream(new File(getPublicStorageDir("Samples/" ), Long.toHexString(System.currentTimeMillis()).toUpperCase() + ".png"))) {
-                                    mRGBframeBitmap.compress(Bitmap.CompressFormat.PNG, 100, out); // bmp is your Bitmap instance
-                                    Toast.makeText(mContext, "Saved an Image", Toast.LENGTH_LONG).show();
-                                    // PNG is a lossless format, the compression factor (100) is ignored
-                                } catch (IOException e) {
-                                    e.printStackTrace();
+                            if (Math.abs(r.getPitch()) <= THRESHOLD && Math.abs(r.getRoll()) <= THRESHOLD && Math.abs(r.getYaw()) <= THRESHOLD) {
+                                Pose pose = new Pose(r.getPitch(), r.getRoll(), r.getYaw());
+                                if (bestPose == null)
+                                    bestPose = pose;
+                                if (bestPose.compareTo(pose) >= 0) {
+                                    try (FileOutputStream out = new FileOutputStream(new File(getPublicStorageDir("Samples/"), Long.toHexString(System.currentTimeMillis()).toUpperCase() + ".png"))) {
+                                        mRGBframeBitmap.compress(Bitmap.CompressFormat.PNG, 100, out); // bmp is your Bitmap instance
+                                        imageCount = imageCount + 1;
+                                        Toast.makeText(mContext, "Saved an Image", Toast.LENGTH_SHORT).show();
+                                        // PNG is a lossless format, the compression factor (100) is ignored
+                                    } catch (IOException e) {
+                                        e.printStackTrace();
+                                    }
                                 }
                             }
                             ((Activity) mContext).runOnUiThread(new Runnable() {

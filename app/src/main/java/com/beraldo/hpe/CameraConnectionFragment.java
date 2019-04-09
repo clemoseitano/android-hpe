@@ -29,7 +29,9 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.v4.app.ActivityCompat;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.util.Range;
 import android.util.Size;
 import android.util.SparseIntArray;
 import android.view.LayoutInflater;
@@ -53,23 +55,7 @@ import java.util.concurrent.TimeUnit;
 import com.beraldo.hpe.utils.XMLReader;
 import com.beraldo.hpe.view.AutoFitTextureView;
 import hugo.weaving.DebugLog;
-/**
-    在CameraAcitivity里替换掉activity_camera.xml里的layout
-    getFragmentManager()
-                    .beginTransaction()
-                    .replace(R.id.container, CameraConnectionFragment.newInstance())
-                    .commit();
-    
-    <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/container"
 
-    在xml中有自定义的TextView
-        <com.beraldo.hpe.view.AutoFitTextureView
-        android:id="@+id/texture"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
- */
 public class CameraConnectionFragment extends Fragment {
     /**
      * The camera preview size will be chosen to be the smallest frame by pixel size capable of
@@ -83,60 +69,6 @@ public class CameraConnectionFragment extends Fragment {
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
     private static final String FRAGMENT_DIALOG = "dialog";
     static CameraCharacteristics mCameraCharacteristics;
-
-    /*
-    * <VIZARIO.Cam>
-        <device type="HUAWEI HUAWEI VNS-L31" version="23"/>
-        <camera type="Front" resolution="640x480"/>
-        <target type="checkerboard" hcorners="7" vcorners="5"/>
-        <aspect ratio="1,0000000000" squaresize="27,5000000000" fixprinciple="false" fixtangent="true"/>
-        <calibration focus="1,0" numimages="50">
-            <error value="0,1756639928"/>
-            <kmatrix k00="502,1289672852" k10="0,0000000000" k20="320,2968750000" k01="0,0000000000" k11="501,8489990234" k21="245,9884185791" k02="0,0000000000" k12="0,0000000000" k22="1,0000000000"/>
-            <distortion d0="-0,0105959345" d1="1,3034974337" d2="0,0000000000" d3="0,0000000000" d4="-5,9595479965"/>
-        </calibration>
-     </VIZARIO.Cam>
-
-    * */
-
-    /*
-    * ANDROID
-    *       Four radial distortion coefficients [kappa_0, kappa_1, kappa_2, kappa_3] and
-    *       two tangential distortion coefficients [kappa_4, kappa_5] that can be used to correct the lens's
-    *       geometric distortion with the mapping equations:
-
-            x_c = x_i * ( kappa_0 + kappa_1 * r^2 + kappa_2 * r^4 + kappa_3 * r^6 ) +
-                kappa_4 * (2 * x_i * y_i) + kappa_5 * ( r^2 + 2 * x_i^2 )
-
-            y_c = y_i * ( kappa_0 + kappa_1 * r^2 + kappa_2 * r^4 + kappa_3 * r^6 ) +
-                kappa_5 * (2 * x_i * y_i) + kappa_4 * ( r^2 + 2 * y_i^2 )
-    *
-    * */
-
-    /*
-    * OPENCV
-    *       For the distortion OpenCV takes into account the radial and tangential factors.
-    *       For the radial factor one uses the following formula:
-
-            x_{corrected} = x( 1 + k_1 r^2 + k_2 r^4 + k_3 r^6) \\
-            y_{corrected} = y( 1 + k_1 r^2 + k_2 r^4 + k_3 r^6)
-
-            So for an old pixel point at (x,y) coordinates in the input image, its position on the corrected output
-            image will be (x_{corrected} y_{corrected}). The presence of the radial distortion manifests in form of the
-            “barrel” or “fish-eye” effect.
-
-            Tangential distortion occurs because the image taking lenses are not perfectly parallel to the imaging plane.
-            It can be corrected via the formulas:
-
-            x_{corrected} = x + [ 2p_1xy + p_2(r^2+2x^2)] \\
-            y_{corrected} = y + [ p_1(r^2+ 2y^2)+ 2p_2xy]
-
-            So we have five distortion parameters which in OpenCV are presented as one row matrix with 5 columns:
-
-            Distortion_{coefficients}=(k_1  k_2  p_1  p_2  k_3)
-    *
-    * */
-
 
     /* Android gives [f_x, f_y, c_x, c_y, s] */
     static float[] mCameraIntrinsics = new float[5];
@@ -409,17 +341,24 @@ public class CameraConnectionFragment extends Fragment {
     /**
      * Sets up member variables related to camera.
      *
-     * @param width  The width of available size for camera preview
-     * @param height The height of available size for camera preview
+     * @param w  The width of available size for camera preview
+     * @param h The height of available size for camera preview
      */
     @DebugLog
     @SuppressLint("LongLogTag")
-    private void setUpCameraOutputs(final int width, final int height) {
+    private void setUpCameraOutputs(final int w, final int h) {
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        getActivity().getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        final int height = displayMetrics.heightPixels;
+        final int width = displayMetrics.widthPixels;
         final Activity activity = getActivity();
         final CameraManager manager = (CameraManager) activity.getSystemService(Context.CAMERA_SERVICE);
         try {
             for (final String cameraId : manager.getCameraIdList()) { // Cycle through all available cameras
                 final CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId); // Inspect this camera characteristics
+                for(Object k: characteristics.getKeys()){
+                    Log.e("DEBUG_KEYS", String.valueOf(k));
+                }
                 final Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING); // Get which facing it is
                 if (facing != null && facing == CameraCharacteristics.LENS_FACING_FRONT) { // If it faces front, we 've found it
                     mCameraCharacteristics = characteristics; // Get the characteristics of the camera and set them as an attribute
@@ -443,7 +382,7 @@ public class CameraConnectionFragment extends Fragment {
                             chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class), width, height, largest);
 
                     // Set aspect ratio for the textureView in order to comply with landscape mode
-                    textureView.setAspectRatio(previewSize.getWidth(), previewSize.getHeight());
+                    textureView.setAspectRatio(width, height);
 
                     // Set the camera as the selected
                     CameraConnectionFragment.this.cameraId = cameraId;
@@ -637,6 +576,11 @@ public class CameraConnectionFragment extends Fragment {
                                 previewRequestBuilder.set(
                                         CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
 
+
+
+                                previewRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, getRange());//This line of code is used for adjusting the fps range and fixing the dark preview
+                                previewRequestBuilder.set(CaptureRequest.CONTROL_AE_LOCK, false);
+                                previewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER_START);
                                 // Finally, we start displaying the camera preview.
                                 previewRequest = previewRequestBuilder.build();
                                 captureSession.setRepeatingRequest(
@@ -659,6 +603,31 @@ public class CameraConnectionFragment extends Fragment {
 
         mOnGetPreviewListener.initialize(getActivity(), mCameraIntrinsics, mCameraDistortions, mPerformanceView, mResultsView, inferenceHandler);
         buttonsClickable = true;
+    }
+
+    private Range<Integer> getRange() {
+        CameraManager mCameraManager = (CameraManager) getActivity().getSystemService(Context.CAMERA_SERVICE);
+        CameraCharacteristics chars = null;
+        try {
+            chars = mCameraManager.getCameraCharacteristics(cameraId);
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
+        }
+        Range<Integer>[] ranges = chars.get(CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES);
+
+        Range<Integer> result = null;
+
+        for (Range<Integer> range : ranges) {
+            int upper = range.getUpper();
+
+            // 10 - min range upper for my needs
+            if (upper >= 10) {
+                if (result == null || upper < result.getUpper().intValue()) {
+                    result = range;
+                }
+            }
+        }
+        return result;
     }
 
     /**
@@ -706,6 +675,7 @@ public class CameraConnectionFragment extends Fragment {
             matrix.postScale(scale, scale, centerX, centerY);
             matrix.postRotate(90 * (rotation - 2), centerX, centerY);
         }*/
+        Log.e("DEBUG_ROTATION", "Rotation: "+rotation);
         textureView.setTransform(matrix);
     }
 
