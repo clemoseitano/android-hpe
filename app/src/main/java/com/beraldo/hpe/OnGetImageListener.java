@@ -161,9 +161,10 @@ public class OnGetImageListener implements OnImageAvailableListener {
     private void drawUnmirroredRotatedBitmap(final Bitmap src, final Bitmap dst, final int rotation) {
         final Matrix matrix = new Matrix();
         //matrix.postTranslate(-dst.getWidth() / 2.0f, -dst.getHeight() / 2.0f);
-        matrix.postRotate(rotation);
-        matrix.setScale(-1, 1);
-        matrix.postTranslate(dst.getWidth(), 0);
+        //matrix.postRotate(rotation);
+        matrix.postRotate(270);
+        //matrix.setScale(-1, 1);
+        matrix.postTranslate(0, dst.getHeight());
 
         final Canvas canvas = new Canvas(dst);
         canvas.drawBitmap(src, matrix, null);
@@ -236,7 +237,7 @@ public class OnGetImageListener implements OnImageAvailableListener {
         }
 
         mRGBframeBitmap.setPixels(mRGBBytes, 0, mPreviewWdith, 0, 0, mPreviewWdith, mPreviewHeight);
-        drawUnmirroredRotatedBitmap(mRGBframeBitmap, mRGBrotatedBitmap, 0);
+        drawUnmirroredRotatedBitmap(mRGBframeBitmap, mRGBrotatedBitmap, 270);// here
         //drawResizedBitmap(mRGBframeBitmap, mCroppedBitmap);
 
         mInferenceHandler.post(

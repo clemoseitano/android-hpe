@@ -30,6 +30,7 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.v4.app.ActivityCompat;
 import android.util.Log;
+import android.util.Range;
 import android.util.Size;
 import android.util.SparseIntArray;
 import android.view.LayoutInflater;
@@ -637,6 +638,10 @@ public class CameraConnectionFragment extends Fragment {
                                 previewRequestBuilder.set(
                                         CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
 
+
+                                previewRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, getRange());//This line of code is used for adjusting the fps range and fixing the dark preview
+                                previewRequestBuilder.set(CaptureRequest.CONTROL_AE_LOCK, false);
+                                previewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER_START);
                                 // Finally, we start displaying the camera preview.
                                 previewRequest = previewRequestBuilder.build();
                                 captureSession.setRepeatingRequest(
@@ -660,6 +665,32 @@ public class CameraConnectionFragment extends Fragment {
         mOnGetPreviewListener.initialize(getActivity(), mCameraIntrinsics, mCameraDistortions, mPerformanceView, mResultsView, inferenceHandler);
         buttonsClickable = true;
     }
+    private Range<Integer> getRange() {
+        CameraManager mCameraManager = (CameraManager) getActivity().getSystemService(Context.CAMERA_SERVICE);
+        CameraCharacteristics chars = null;
+        try {
+            chars = mCameraManager.getCameraCharacteristics(cameraId);
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
+        }
+        Range<Integer>[] ranges = chars.get(CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES);
+
+        Range<Integer> result = null;
+
+        for (Range<Integer> range : ranges) {
+            int upper = range.getUpper();
+
+            // 10 - min range upper for my needs
+            if (upper >= 10) {
+                if (result == null || upper < result.getUpper().intValue()) {
+                    result = range;
+                }
+            }
+        }
+        return result;
+    }
+
+
 
     /**
      * Configures the necessary {@link android.graphics.Matrix} transformation to `mTextureView`.
@@ -692,7 +723,8 @@ public class CameraConnectionFragment extends Fragment {
                             (float) viewWidth / previewSize.getWidth());
             matrix.postScale(scale, scale, centerX, centerY);
             matrix.postRotate(-90, centerX, centerY);
-        } /*else if(rotation == Surface.ROTATION_180) {
+        }
+        /*else if(rotation == Surface.ROTATION_180) {
             Log.d(TAG, "Rotation is Surface.ROTATION_180");
             matrix.postRotate(180, centerX, centerY);
         } else if(rotation == Surface.ROTATION_270) {
