@@ -80,12 +80,14 @@ public class OnGetImageListener implements OnImageAvailableListener {
     private int valid_cycles = 0;
     private Pose bestPose;
     private int imageCount = 0;
+    private boolean frontCamera;
 
-    public void initialize(final Context context, final float[] intrinsics, final float[] distortions, final TextView mPerformanceView, final TextView mResultsView, final Handler handler) {
+    public void initialize(final Context context, final float[] intrinsics, final float[] distortions, final TextView mPerformanceView, final TextView mResultsView, final Handler handler, boolean frontfacingCamera) {
         this.mContext = context;
         this.mPerformanceView = mPerformanceView;
         this.mResultsView = mResultsView;
         this.mInferenceHandler = handler;
+        this.frontCamera = frontfacingCamera;
         mHeadPoseDetector = new HeadPoseDetector();
         mWindow = new FloatingCameraWindow(mContext);
 
@@ -161,12 +163,24 @@ public class OnGetImageListener implements OnImageAvailableListener {
         canvas.drawBitmap(src, matrix, null);
     }
 
-    private void drawUnmirroredRotatedBitmap(final Bitmap src, final Bitmap dst, final int rotation) {
+//    private void drawUnmirroredRotatedBitmap(final Bitmap src, final Bitmap dst, final int rotation) {
+////        final Matrix matrix = new Matrix();
+////        //matrix.postTranslate(-dst.getWidth() / 2.0f, -dst.getHeight() / 2.0f);
+////        matrix.postRotate(rotation);
+////        matrix.setScale(-1, 1);
+////        matrix.postTranslate(dst.getWidth(), 0);
+////
+////        final Canvas canvas = new Canvas(dst);
+////        canvas.drawBitmap(src, matrix, null);
+////    }
+
+    private void drawUnmirroredRotatedBitmap(final Bitmap src, final Bitmap dst) {
         final Matrix matrix = new Matrix();
         //matrix.postTranslate(-dst.getWidth() / 2.0f, -dst.getHeight() / 2.0f);
-        matrix.postRotate(rotation);
-        matrix.setScale(-1, 1);
-        matrix.postTranslate(dst.getWidth(), 0);
+        //matrix.postRotate(rotation);
+        matrix.postRotate(frontCamera ? 270 : 90);
+        //matrix.setScale(-1, 1);
+        matrix.postTranslate(frontCamera ? 0 : dst.getWidth(), frontCamera ? dst.getHeight() : 0);
 
         final Canvas canvas = new Canvas(dst);
         canvas.drawBitmap(src, matrix, null);
@@ -239,7 +253,7 @@ public class OnGetImageListener implements OnImageAvailableListener {
         }
 
         mRGBframeBitmap.setPixels(mRGBBytes, 0, mPreviewWdith, 0, 0, mPreviewWdith, mPreviewHeight);
-        drawUnmirroredRotatedBitmap(mRGBframeBitmap, mRGBrotatedBitmap, 0);
+        drawUnmirroredRotatedBitmap(mRGBframeBitmap, mRGBrotatedBitmap);
         //drawResizedBitmap(mRGBframeBitmap, mCroppedBitmap);
 
         mInferenceHandler.post(

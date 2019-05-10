@@ -54,7 +54,26 @@
         android:layout_gravity="center"
         android:onClick="onCheckBoxSaveClicked"
         android:text="Save results into a local file"/>
+    <RadioGroup
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center">
 
+        <RadioButton
+            android:id="@+id/radio_rear_cam"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:checked="true"
+            android:onClick="onRadioButtonClicked"
+            android:text="Rear Camera" />
+
+        <RadioButton
+            android:id="@+id/radio_front_cam"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="onRadioButtonClicked"
+            android:text="Front Camera" />
+    </RadioGroup>
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

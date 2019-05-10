@@ -54,6 +54,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.beraldo.hpe.utils.XMLReader;
 import com.beraldo.hpe.view.AutoFitTextureView;
+
 import hugo.weaving.DebugLog;
 
 public class CameraConnectionFragment extends Fragment {
@@ -297,7 +298,7 @@ public class CameraConnectionFragment extends Fragment {
         stopButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if(buttonsClickable) getActivity().onBackPressed();
+                if (buttonsClickable) getActivity().onBackPressed();
             }
         });
 
@@ -305,7 +306,7 @@ public class CameraConnectionFragment extends Fragment {
             @Override
             public void onClick(View view) {
                 MainActivity.saveFile = false;
-                if(buttonsClickable) getActivity().onBackPressed();
+                if (buttonsClickable) getActivity().onBackPressed();
             }
         });
     }
@@ -341,7 +342,7 @@ public class CameraConnectionFragment extends Fragment {
     /**
      * Sets up member variables related to camera.
      *
-     * @param w  The width of available size for camera preview
+     * @param w The width of available size for camera preview
      * @param h The height of available size for camera preview
      */
     @DebugLog
@@ -356,11 +357,12 @@ public class CameraConnectionFragment extends Fragment {
         try {
             for (final String cameraId : manager.getCameraIdList()) { // Cycle through all available cameras
                 final CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId); // Inspect this camera characteristics
-                for(Object k: characteristics.getKeys()){
+                for (Object k : characteristics.getKeys()) {
                     Log.e("DEBUG_KEYS", String.valueOf(k));
                 }
                 final Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING); // Get which facing it is
-                if (facing != null && facing == CameraCharacteristics.LENS_FACING_FRONT) { // If it faces front, we 've found it
+                if (facing != null && facing == (MainActivity.frontCamera ? CameraCharacteristics.LENS_FACING_FRONT :
+                        CameraCharacteristics.LENS_FACING_BACK)) { // If it faces front, we 've found it
                     mCameraCharacteristics = characteristics; // Get the characteristics of the camera and set them as an attribute
 
                     // See if it complies with what we need, otherwise skip to another camera
@@ -379,7 +381,7 @@ public class CameraConnectionFragment extends Fragment {
                     // bus' bandwidth limitation, resulting in gorgeous previews but the storage of
                     // garbage capture data.
                     previewSize =
-                            chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class), width, height, largest);
+                            chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class), width, width, largest);
 
                     // Set aspect ratio for the textureView in order to comply with landscape mode
                     textureView.setAspectRatio(width, height);
@@ -387,18 +389,17 @@ public class CameraConnectionFragment extends Fragment {
                     // Set the camera as the selected
                     CameraConnectionFragment.this.cameraId = cameraId;
 
-                    if(Build.VERSION.SDK_INT >= 23) {
-                        if(mCameraCharacteristics.get(CameraCharacteristics.LENS_INTRINSIC_CALIBRATION) != null) {
-                            mCameraIntrinsics =  mCameraCharacteristics.get(CameraCharacteristics.LENS_INTRINSIC_CALIBRATION);
+                    if (Build.VERSION.SDK_INT >= 23) {
+                        if (mCameraCharacteristics.get(CameraCharacteristics.LENS_INTRINSIC_CALIBRATION) != null) {
+                            mCameraIntrinsics = mCameraCharacteristics.get(CameraCharacteristics.LENS_INTRINSIC_CALIBRATION);
                             mInfoView.setText("Camera intrinsics available!\n[f_x, f_y, c_x, c_y, s]\n" + mCameraIntrinsics);
-                        }
-                        else {
+                        } else {
                             mCameraIntrinsics = XMLReader.loadIntrinsicParams(getActivity());
                             mInfoView.setText("No camera intrinsics prebuilt values available for this device! Using:\n" +
                                     "[f_x] = " + mCameraIntrinsics[0] + " [f_y] = " + mCameraIntrinsics[1] + " [c_x] = " + mCameraIntrinsics[2] + " [c_y] = " + mCameraIntrinsics[2]);
                         }
 
-                        if(mCameraCharacteristics.get(CameraCharacteristics.LENS_RADIAL_DISTORTION) != null) {
+                        if (mCameraCharacteristics.get(CameraCharacteristics.LENS_RADIAL_DISTORTION) != null) {
                             float[] values = mCameraCharacteristics.get(CameraCharacteristics.LENS_RADIAL_DISTORTION);
                             mCameraDistortions[0] = values[1]; // k1
                             mCameraDistortions[1] = values[2]; // k2
@@ -406,8 +407,7 @@ public class CameraConnectionFragment extends Fragment {
                             mCameraDistortions[3] = values[5]; // p2
                             mCameraDistortions[4] = values[3]; // k3
                             mInfoView.append("Camera distortions available!\n[k_1, k_2, p_1, p_2, k_3]\n" + mCameraDistortions);
-                        }
-                        else {
+                        } else {
                             mCameraDistortions = XMLReader.loadDistortionParams(getActivity());
                             mInfoView.append("\nNo camera distortions prebuilt values available for this device! Using:\n" +
                                     "[k_1] = " + mCameraDistortions[0] + " [k_2] = " + mCameraDistortions[1] + " [p_1] = " + mCameraDistortions[2] + " [p_2] = " + mCameraDistortions[3] + " k_3] = " + mCameraDistortions[4]);
@@ -548,7 +548,7 @@ public class CameraConnectionFragment extends Fragment {
             // Create the reader for the preview frames.
             previewReader =
                     ImageReader.newInstance(
-                            previewSize.getWidth(), previewSize.getHeight(), ImageFormat.YUV_420_888, 2);
+                            previewSize.getHeight(), previewSize.getHeight(), ImageFormat.YUV_420_888, 2);
 
             previewReader.setOnImageAvailableListener(mOnGetPreviewListener, backgroundHandler);
             previewRequestBuilder.addTarget(previewReader.getSurface());
@@ -577,7 +577,6 @@ public class CameraConnectionFragment extends Fragment {
                                         CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
 
 
-
                                 previewRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, getRange());//This line of code is used for adjusting the fps range and fixing the dark preview
                                 previewRequestBuilder.set(CaptureRequest.CONTROL_AE_LOCK, false);
                                 previewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER_START);
@@ -601,7 +600,7 @@ public class CameraConnectionFragment extends Fragment {
             Log.e(TAG, "Exception!", e);
         }
 
-        mOnGetPreviewListener.initialize(getActivity(), mCameraIntrinsics, mCameraDistortions, mPerformanceView, mResultsView, inferenceHandler);
+        mOnGetPreviewListener.initialize(getActivity(), mCameraIntrinsics, mCameraDistortions, mPerformanceView, mResultsView, inferenceHandler, MainActivity.frontCamera);
         buttonsClickable = true;
     }
 
@@ -651,7 +650,7 @@ public class CameraConnectionFragment extends Fragment {
         final RectF bufferRect = new RectF(0, 0, previewSize.getHeight(), previewSize.getWidth());
         final float centerX = viewRect.centerX();
         final float centerY = viewRect.centerY();
-        if(rotation == Surface.ROTATION_90) {
+        if (rotation == Surface.ROTATION_90) {
             //Log.d(TAG, "Rotation is Surface.ROTATION_90");
             bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY());
             matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
@@ -660,7 +659,7 @@ public class CameraConnectionFragment extends Fragment {
                             (float) viewHeight / previewSize.getHeight(),
                             (float) viewWidth / previewSize.getWidth());
             matrix.postScale(scale, scale, centerX, centerY);
-            matrix.postRotate(-90, centerX, centerY);
+            matrix.postRotate(MainActivity.frontCamera ? -90 : 90, centerX, centerY);
         } /*else if(rotation == Surface.ROTATION_180) {
             Log.d(TAG, "Rotation is Surface.ROTATION_180");
             matrix.postRotate(180, centerX, centerY);
@@ -675,7 +674,7 @@ public class CameraConnectionFragment extends Fragment {
             matrix.postScale(scale, scale, centerX, centerY);
             matrix.postRotate(90 * (rotation - 2), centerX, centerY);
         }*/
-        Log.e("DEBUG_ROTATION", "Rotation: "+rotation);
+        Log.e("DEBUG_ROTATION", "Rotation: " + rotation);
         textureView.setTransform(matrix);
     }
 
