@@ -2,5 +2,8 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/android-hpe-library" vcs="" />
+    <mapping directory="$PROJECT_DIR$/android-hpe-library/dlib" vcs="" />
+    <mapping directory="$PROJECT_DIR$/android-hpe-library/third_party/miniglog" vcs="" />
   </component>
 </project>

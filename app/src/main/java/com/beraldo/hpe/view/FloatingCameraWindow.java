@@ -56,8 +56,8 @@ public class FloatingCameraWindow {
         mWindowWidth = mScreenMaxWidth / 2;
         mWindowHeight = mScreenMaxHeight / 2;
 
-        mWindowWidth = mWindowWidth > 0 && mWindowWidth < mScreenMaxWidth ? mWindowWidth : mScreenMaxWidth;
-        mWindowHeight = mWindowHeight > 0 && mWindowHeight < mScreenMaxHeight ? mWindowHeight : mScreenMaxHeight;
+        mWindowWidth = 360;//mWindowWidth > 0 && mWindowWidth < mScreenMaxWidth ? mWindowWidth : mScreenMaxWidth;
+        mWindowHeight = 360;//mWindowHeight > 0 && mWindowHeight < mScreenMaxHeight ? mWindowHeight : mScreenMaxHeight;
     }
 
     public FloatingCameraWindow(Context context, int windowWidth, int windowHeight) {

@@ -40,6 +40,7 @@ import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -77,6 +78,14 @@ public class CameraConnectionFragment extends Fragment {
     /* Android gives [k_0, k_1, k_2, k_3, p_1, p_2] */
     /* OpenCV wants [k_1, k_2, p_1, p_2, k_3] */
     static float[] mCameraDistortions = new float[5];
+    private CameraConfigurationChangeListener mListener;
+
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        if (context instanceof CameraConfigurationChangeListener)
+            mListener = (CameraConfigurationChangeListener) context;
+    }
 
     /**
      * A {@link Semaphore} to prevent the app from exiting before closing the camera.
@@ -294,6 +303,37 @@ public class CameraConnectionFragment extends Fragment {
         mPerformanceView = (TextView) view.findViewById(R.id.performance_tv);
         mResultsView = (TextView) view.findViewById(R.id.results_tv);
         mInfoView = (TextView) view.findViewById(R.id.info_tv);
+        // An imagebutton to act as a switch for the cameras
+        ImageButton switchCamera = view.findViewById(R.id.switch_camera);
+        // An imagebutton to capture a photo
+        ImageButton snapPhoto = view.findViewById(R.id.snap_photo);
+        // An imagebutton to change settings
+        ImageButton settings = view.findViewById(R.id.settings);
+
+        switchCamera.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                MainActivity.frontCamera = !MainActivity.frontCamera;
+                if (mListener != null)
+                    mListener.restartCamera();
+            }
+        });
+
+        snapPhoto.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                    captureCurrentFrame();
+            }
+        });
+
+        // this is a developer only feature for now
+        settings.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (mListener != null)
+                    mListener.showSettings();
+            }
+        });
 
         stopButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -719,5 +759,15 @@ public class CameraConnectionFragment extends Fragment {
                             })
                     .create();
         }
+    }
+
+    public void captureCurrentFrame() {
+        mOnGetPreviewListener.captureCurrent = true;
+    }
+
+    public interface CameraConfigurationChangeListener {
+        public void restartCamera();
+
+        public void showSettings();
     }
 }

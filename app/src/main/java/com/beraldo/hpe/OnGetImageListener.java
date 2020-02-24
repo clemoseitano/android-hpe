@@ -81,6 +81,7 @@ public class OnGetImageListener implements OnImageAvailableListener {
     private Pose bestPose;
     private int imageCount = 0;
     private boolean frontCamera;
+    public boolean captureCurrent = false;
 
     public void initialize(final Context context, final float[] intrinsics, final float[] distortions, final TextView mPerformanceView, final TextView mResultsView, final Handler handler, boolean frontfacingCamera) {
         this.mContext = context;
@@ -178,7 +179,7 @@ public class OnGetImageListener implements OnImageAvailableListener {
         final Matrix matrix = new Matrix();
         //matrix.postTranslate(-dst.getWidth() / 2.0f, -dst.getHeight() / 2.0f);
         //matrix.postRotate(rotation);
-        matrix.postRotate(frontCamera ? 270 : 90);
+        matrix.postRotate(frontCamera ? 90 : 90);
         //matrix.setScale(-1, 1);
         matrix.postTranslate(frontCamera ? 0 : dst.getWidth(), frontCamera ? dst.getHeight() : 0);
 
@@ -256,6 +257,18 @@ public class OnGetImageListener implements OnImageAvailableListener {
         drawUnmirroredRotatedBitmap(mRGBframeBitmap, mRGBrotatedBitmap);
         //drawResizedBitmap(mRGBframeBitmap, mCroppedBitmap);
 
+        if(captureCurrent){
+            try (FileOutputStream out = new FileOutputStream(new File(getPublicStorageDir("Samples/"), Long.toHexString(System.currentTimeMillis()).toUpperCase() + ".png"))) {
+                mRGBframeBitmap.compress(Bitmap.CompressFormat.PNG, 100, out); // bmp is your Bitmap instance
+                imageCount = imageCount + 1;
+                Toast.makeText(mContext, "Captured current preview", Toast.LENGTH_SHORT).show();
+                // PNG is a lossless format, the compression factor (100) is ignored
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            captureCurrent = false;
+        }
+
         mInferenceHandler.post(
                 new Runnable() {
                     @Override
@@ -282,7 +295,7 @@ public class OnGetImageListener implements OnImageAvailableListener {
 
                             final HeadPoseGaze r = results.get(0);
                             if (Math.abs(r.getPitch()) <= THRESHOLD && Math.abs(r.getRoll()) <= THRESHOLD && Math.abs(r.getYaw()) <= THRESHOLD) {
-                                Pose pose = new Pose(r.getPitch(), r.getRoll(), r.getYaw());
+                                Pose pose = new Pose(Math.abs(r.getPitch()), Math.abs(r.getRoll()), Math.abs(r.getYaw()));
                                 if (bestPose == null)
                                     bestPose = pose;
                                 if (bestPose.compareTo(pose) >= 0) {

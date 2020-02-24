@@ -4,9 +4,11 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.provider.Settings;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -15,6 +17,7 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.CheckBox;
 import android.widget.RadioButton;
+import android.widget.Toast;
 
 import org.androidannotations.annotations.AfterViews;
 import org.androidannotations.annotations.EActivity;
@@ -29,7 +32,8 @@ import com.beraldo.hpe.utils.FileUtils;
 import hugo.weaving.DebugLog;
 
 @EActivity(R.layout.activity_main)
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements CameraConnectionFragment.CameraConfigurationChangeListener {
+    private static int OVERLAY_PERMISSION_REQ_CODE = 1;
     private static final int REQUEST_CODE_PERMISSION = 2;
     private static final String TAG = "MainActivity";
 
@@ -196,6 +200,20 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         FileUtils.savePreference(this, FileUtils.PARAMS_DIR_PREFS_NAME, params.getAbsolutePath());
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (!Settings.canDrawOverlays(this.getApplicationContext())) {
+                Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + getPackageName()));
+                startActivityForResult(intent, OVERLAY_PERMISSION_REQ_CODE);
+            }
+        }
+
+        if (null == savedInstanceState) {
+            getFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.container, CameraConnectionFragment.newInstance())
+                    .commit();
+        }
     }
 
     @AfterViews
@@ -227,5 +245,29 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == OVERLAY_PERMISSION_REQ_CODE) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (!Settings.canDrawOverlays(this.getApplicationContext())) {
+                    Toast.makeText(MainActivity.this, "CameraActivity\", \"SYSTEM_ALERT_WINDOW, permission not granted...", Toast.LENGTH_SHORT).show();
+                } else {
+                    Intent intent = getIntent();
+                    finish();
+                    startActivity(intent);
+                }
+            }
+        }
+    }
+
+    @Override
+    public void restartCamera() {
+        getFragmentManager()
+                .beginTransaction()
+                .replace(R.id.container, CameraConnectionFragment.newInstance())
+                .commit();
+    }
+
+    @Override
+    public void showSettings() {
+
     }
 }
